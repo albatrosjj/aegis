@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Aegis — Pitch Deck</title>
+<style>
+  :root {
+    --bg: #0d0d0d; --surface: #1a1a19;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --border: rgba(255,255,255,0.12);
+    --blue: #3987e5; --good: #0ca30c; --critical: #d03b3b; --warning: #c98500;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: #000; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); }
+  .slide {
+    width: 1280px; height: 720px; background: var(--bg);
+    padding: 72px 88px; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; page-break-after: always;
+    margin: 0 auto 16px;
+  }
+  .slide::after {
+    content: "Aegis · built on Arc Network"; position: absolute;
+    bottom: 28px; right: 88px; font-size: 14px; color: var(--muted);
+  }
+  .kicker { font-size: 16px; letter-spacing: .18em; text-transform: uppercase; color: var(--blue); font-weight: 700; margin-bottom: 18px; }
+  h1 { font-size: 84px; letter-spacing: -.02em; }
+  h2 { font-size: 46px; letter-spacing: -.01em; margin-bottom: 34px; line-height: 1.15; }
+  h2 em { color: var(--blue); font-style: normal; }
+  .lead { font-size: 26px; color: var(--ink-2); line-height: 1.5; max-width: 900px; }
+  .big { font-size: 32px; line-height: 1.45; }
+  .cols { display: flex; gap: 28px; flex: 1; align-items: stretch; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 30px 32px; flex: 1;
+  }
+  .card h3 { font-size: 22px; margin-bottom: 12px; }
+  .card p, .card li { font-size: 19px; color: var(--ink-2); line-height: 1.5; }
+  .card ul { padding-left: 22px; }
+  .stat { font-size: 64px; font-weight: 700; }
+  .stat small { font-size: 22px; font-weight: 400; color: var(--ink-2); display: block; margin-top: 8px; }
+  .accent-blue { color: var(--blue); } .accent-good { color: var(--good); }
+  .accent-crit { color: var(--critical); }
+  .flow { display: flex; align-items: center; gap: 18px; margin: 40px 0; }
+  .flow .node {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 22px 26px; text-align: center; font-size: 21px; line-height: 1.35;
+  }
+  .flow .node small { display: block; color: var(--muted); font-size: 15px; margin-top: 6px; }
+  .flow .arrow { font-size: 30px; color: var(--muted); }
+  .node.hero { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+  .brain-note { text-align: center; color: var(--ink-2); font-size: 20px; margin-top: 6px; }
+  .rule-table { width: 100%; border-collapse: collapse; font-size: 21px; }
+  .rule-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); color: var(--ink-2); }
+  .rule-table td:first-child { color: var(--ink); font-weight: 600; font-family: ui-monospace, monospace; font-size: 19px; white-space: nowrap; }
+  .mono { font-family: ui-monospace, monospace; font-size: 17px; color: var(--muted); word-break: break-all; }
+  .footer-links { font-size: 24px; line-height: 2; }
+  .footer-links .mono { font-size: 20px; color: var(--ink-2); }
+  .spacer { flex: 1; }
+  .shield { font-size: 120px; margin-bottom: 24px; }
+  .tagline { font-size: 34px; color: var(--ink-2); margin-top: 20px; }
+  .roadmap { display: flex; gap: 0; align-items: flex-start; margin-top: 20px; }
+  .roadmap .step { flex: 1; padding: 0 18px; border-left: 3px solid var(--border); }
+  .roadmap .step.done { border-left-color: var(--good); }
+  .roadmap .step.next { border-left-color: var(--blue); }
+  .roadmap .when { font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 8px; }
+  .roadmap h3 { font-size: 21px; margin-bottom: 8px; }
+  .roadmap p { font-size: 17px; color: var(--ink-2); line-height: 1.45; }
+  @page { size: 1280px 720px; margin: 0; }
+  @media print { body { background: none; } .slide { margin: 0; } }
+</style>
+</head>
+<body>
+
+<!-- 1 · COVER -->
+<section class="slide" style="justify-content:center; align-items:center; text-align:center;">
+  <div class="shield">🛡</div>
+  <h1>Aegis</h1>
+  <div class="tagline">The spend-control firewall for AI agents</div>
+  <div style="margin-top:36px; font-size:20px; color:var(--muted);">Built on Arc Network · USDC-native · Agentic Economy track</div>
+</section>
+
+<!-- 2 · PROBLEM -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>Agents can pay. <em>Trusting them with money</em> is the hard part.</h2>
+  <p class="lead">AI agents are getting wallets and paying for APIs, data, and other agents — autonomously. But a raw private key has no limits:</p>
+  <div class="spacer"></div>
+  <div class="cols" style="flex:0 0 auto;">
+    <div class="card"><h3>💉 One prompt injection</h3><p>and a hijacked agent drains the whole wallet in 30 seconds.</p></div>
+    <div class="card"><h3>🐛 One bad loop</h3><p>and it spends the monthly budget on retries before anyone notices.</p></div>
+    <div class="card"><h3>🔑 One leaked key</h3><p>and there is no undo button on a blockchain.</p></div>
+  </div>
+  <div class="spacer"></div>
+  <p class="big">Nobody wires a treasury to software with no spending controls.<br>Today, agent wallets are exactly that.</p>
+</section>
+
+<!-- 3 · SOLUTION -->
+<section class="slide">
+  <div class="kicker">The solution</div>
+  <h2 style="margin-bottom:20px;">The agent never holds the money. <em>The policy does.</em></h2>
+  <div class="flow">
+    <div class="node">🤖 AI agent<small>holds no funds<br>can only call spend()</small></div>
+    <div class="arrow">→</div>
+    <div class="node hero">🏦 Policy Vault<small>on Arc, in USDC<br>hard limits enforced on-chain</small></div>
+    <div class="arrow">→</div>
+    <div class="node">🌐 Services &amp; agents<small>allowlisted<br>addresses only</small></div>
+  </div>
+  <div class="brain-note">🧠 <b>Risk brain</b> (off-chain) watches every spend in real time — anomaly → trips the on-chain circuit breaker</div>
+  <div class="spacer"></div>
+  <table class="rule-table">
+    <tr><td>maxPerTx</td><td>absolute cap per transaction — unbreakable, even if the agent is hijacked</td></tr>
+    <tr><td>dailyLimit</td><td>sliding 24-hour window cap — no midnight-reset loophole</td></tr>
+    <tr><td>allowlist</td><td>funds only ever flow to approved addresses</td></tr>
+    <tr><td>paused</td><td>circuit breaker — anyone can raise the alarm, only a human can clear it</td></tr>
+  </table>
+</section>
+
+<!-- 4 · LIVE PROOF -->
+<section class="slide">
+  <div class="kicker">Proven live on Arc testnet</div>
+  <h2>We sent our own agent rogue. <em>Aegis cut it off.</em></h2>
+  <div class="cols">
+    <div class="card" style="text-align:center; display:flex; flex-direction:column; justify-content:center;">
+      <div class="stat accent-crit">27.8×</div>
+      <small style="font-size:20px; color:var(--ink-2);">spike over the agent's normal spending — detected on the first rogue transaction</small>
+    </div>
+    <div class="card" style="text-align:center; display:flex; flex-direction:column; justify-content:center;">
+      <div class="stat accent-blue">~10 s</div>
+      <small style="font-size:20px; color:var(--ink-2);">from anomaly to on-chain circuit breaker — every later spend reverted with <span style="font-family:ui-monospace,monospace;">VaultPaused</span></small>
+    </div>
+    <div class="card" style="text-align:center; display:flex; flex-direction:column; justify-content:center;">
+      <div class="stat accent-good">&lt; $5</div>
+      <small style="font-size:20px; color:var(--ink-2);">worst-case loss, mathematically bounded by on-chain limits — even if the risk brain dies</small>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <p class="lead">Every claim is verifiable on-chain. Breaker transaction:</p>
+  <p class="mono">testnet.arcscan.app/tx/0xa0c25f9342bb8ec4f10e1d84a611ce556b248c96c25a9c7a8fb66c1d7ef04d8f</p>
+</section>
+
+<!-- 5 · WHY ARC -->
+<section class="slide">
+  <div class="kicker">Why Arc Network</div>
+  <h2>The agent economy's money, <em>native.</em></h2>
+  <div class="cols">
+    <div class="card"><h3>💵 USDC is the native asset</h3><p>Gas, payments, budgets — one unit of account, no token juggling. Spend policies read exactly like a corporate card policy: in dollars.</p></div>
+    <div class="card"><h3>⚡ Sub-second finality</h3><p>Machine-speed payments need machine-speed settlement — and a circuit breaker that lands in seconds, not minutes.</p></div>
+    <div class="card"><h3>🏛 Compliance-first stack</h3><p>Enterprises will demand controls, auditability, and trust before wiring treasuries to agents. Circle's ecosystem is built on exactly that story — so is Aegis.</p></div>
+  </div>
+</section>
+
+<!-- 6 · MARKET -->
+<section class="slide">
+  <div class="kicker">The analogy that already worked</div>
+  <h2>Ramp &amp; Brex, <em>for the agent economy</em></h2>
+  <p class="lead">Corporate cards existed for decades. Ramp and Brex turned <b>spend control</b> — limits, approvals, fraud detection — into multi-billion-dollar companies, because control is what unlocked giving cards to every employee.</p>
+  <div class="spacer"></div>
+  <p class="big">Agent wallets are where corporate cards were in 1990:<br>powerful, and terrifying to hand out.</p>
+  <div class="spacer"></div>
+  <p class="lead"><b>Aegis is the control layer that lets companies say yes</b> — to every agent, with a budget, an allowlist, and a kill switch.</p>
+</section>
+
+<!-- 7 · ROADMAP -->
+<section class="slide">
+  <div class="kicker">Where this goes</div>
+  <h2>Working today. <em>Growing from here.</em></h2>
+  <div class="roadmap">
+    <div class="step done"><div class="when">✅ Today</div><h3>Live MVP on Arc testnet</h3><p>Policy vault deployed, risk brain, live dashboard with a red-team demo. 8/8 contract tests.</p></div>
+    <div class="step next"><div class="when">Next</div><h3>Natural-language policy</h3><p>"Max $50/day, only these three vendors" → compiled to on-chain config. Policy as a sentence.</p></div>
+    <div class="step"><div class="when">Then</div><h3>Fleets &amp; factories</h3><p>Multi-agent, multi-vault orgs; per-agent budgets; a vault factory so any team deploys in one click.</p></div>
+    <div class="step"><div class="when">Mainnet</div><h3>Audit &amp; production</h3><p>Security audit, opt-in privacy for sensitive amounts, mainnet launch alongside Arc.</p></div>
+  </div>
+</section>
+
+<!-- 8 · CLOSE -->
+<section class="slide" style="justify-content:center;">
+  <div class="shield" style="font-size:80px; margin-bottom:12px;">🛡</div>
+  <h2 style="margin-bottom:16px;">If agents are getting money,<br><em>Aegis is the trust layer.</em></h2>
+  <div class="spacer" style="max-height:40px;"></div>
+  <div class="footer-links">
+    <div>📦 Code &amp; docs — <span class="mono">github.com/albatrosjj/aegis</span></div>
+    <div>⛓ Live vault — <span class="mono">testnet.arcscan.app/address/0x5FB636AbB12A0E2d8F3ec5251dfaEbD4Faa87BfF</span></div>
+    <div>🎬 3-minute demo — <span class="mono">(video link)</span></div>
+  </div>
+</section>
+
+</body>
+</html>
