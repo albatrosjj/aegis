@@ -59,7 +59,7 @@ Arc = Circle'ın stablecoin-native L1 zinciri. USDC gas token'ı, sub-second kes
 - **Explorer:** `https://testnet.arcscan.app` (işlem: `/tx/0x...`)
 - **Faucet:** `https://faucet.circle.com` → "Arc Testnet" seç → adres başına her 2 saatte 20 USDC.
 - **Docs:** `docs.arc.network` (ayrıca `docs.arc.io`)
-- **ethers.js ipucu:** provider'da `staticNetwork` kullan → her istekte chain ID sormaz → "request limit reached" rate-limit hatasını azaltır. (Bu ders send.js'te öğrenildi.)
+- **ethers.js ipucu:** Arc RPC, ethers'ın JSON-RPC batch isteklerini sevmiyor ("missing revert data") → provider'da `batchMaxCount: 1` ver. Ayrıca `staticNetwork` kullan → her istekte chain ID sormaz → "request limit reached" rate-limit hatasını azaltır. (Bu ders send.js'te öğrenildi.)
 
 ---
 

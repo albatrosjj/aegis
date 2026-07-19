@@ -4,7 +4,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "send": "node send.js"
+    "send": "node send.js",
+    "status": "node vault.js status",
+    "unpause": "node vault.js unpause",
+    "pause": "node vault.js pause",
+    "agent": "node agent.js",
+    "rogue": "node agent.js --rogue",
+    "brain": "node riskbrain.js"
   },
   "keywords": [],
   "author": "",
