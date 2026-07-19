@@ -1,0 +1,17 @@
+{
+  "name": "arc-usdc-sender",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "send": "node send.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Arc Testnet uzerinde 1 USDC gonderen basit script",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ethers": "^6.17.0"
+  }
+}
