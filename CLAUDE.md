@@ -86,6 +86,12 @@ Arc = Circle'ın stablecoin-native L1 zinciri. USDC gas token'ı, sub-second kes
 - Arc dersi: agent/riskbrain'de `pollingInterval: 8000` + hata yakalama, yoksa RPC "request limit reached" scriptleri düşürüyor.
 - Ayrıntı: `docs/FAZ3-RISK-BEYNI.md`.
 
+**Faz 4 — TAMAM ✅ (19 Temmuz): Dashboard + red-team düğmesi.**
+- `npm run dashboard` → `server.js` (express, port 3000) + `public/index.html`.
+- Zinciri sadece server yoklar (8sn, `batchMaxCount:1`); ajan/beyin düğmeden spawn edilir; loglar + zincir olayları canlı akar; RED TEAM düğmesi rogue ajanı başlatır; unpause düğmesi owner anahtarıyla.
+- Uçtan uca doğrulandı. Ayrıntı: `docs/FAZ4-DASHBOARD.md`.
+- Kalan (stretch): opt-in privacy, doğal dilde politika.
+
 **Mevcut yapı:**
 - `send.js`, `package.json`, `.env` (GİZLİ), `.gitignore` — Faz 1.
 - `contracts/` — Foundry projesi: `src/SpendVault.sol`, `test/SpendVault.t.sol`.
@@ -112,10 +118,8 @@ Kod için geçerli değil; sadece deck, video, sosyal medya, UI metni gibi dış
 ### Faz 3 — Risk beyni + ajan ✅ TAMAM (bkz. §4)
 - (Nice-to-have, açık) Doğal dilde politika: "günde max $50, sadece şu 3 adres" → on-chain config'e çevir.
 
-### Faz 4 — Demo dashboard + cila ← SIRADAKİ
-- Canlı dashboard: gerçek zamanlı harcama akışı, limitler, breaker durumu.
-- **"Red team" düğmesi:** ajanı çıldırt → firewall canlı bloklasın (demo'nun can alıcı anı).
-- (Stretch) Hassas tutarlar için opt-in privacy.
+### Faz 4 — Demo dashboard + cila ✅ TAMAM (bkz. §4)
+- (Stretch, açık) Hassas tutarlar için opt-in privacy.
 
 ### Faz 5 — Teslim materyalleri (9 Ağustos'a kadar)
 - Arc'a deploy edilmiş çalışan MVP ✓

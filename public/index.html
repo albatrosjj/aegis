@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis — Spend Firewall</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb;
+    --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19;
+      --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--ink); padding: 24px; max-width: 1100px; margin: 0 auto;
+  }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  h1 { font-size: 22px; } h1 span { color: var(--series-1); }
+  .sub { color: var(--ink-2); font-size: 13px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .tile .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .tile .value { font-size: 26px; font-weight: 600; }
+  .tile .hint { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .meter { height: 8px; background: var(--grid); border-radius: 4px; margin-top: 10px; overflow: hidden; }
+  .meter > div { height: 100%; background: var(--series-1); border-radius: 4px; transition: width .5s; }
+  .status-line { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; }
+  .buttons { display: flex; gap: 10px; margin: 16px 0; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  button:hover { border-color: var(--series-1); }
+  button:disabled { opacity: .45; cursor: default; }
+  #btn-rogue { background: var(--critical); border-color: var(--critical); color: #fff; }
+  #btn-unpause { background: var(--good); border-color: var(--good); color: #fff; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .panel h2 { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  td.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  a { color: var(--series-1); text-decoration: none; } a:hover { text-decoration: underline; }
+  .log { font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.6; max-height: 300px; overflow-y: auto; color: var(--ink-2); }
+  .log .brain { color: var(--series-1); }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--ink-2); }
+  .ev-paused { color: var(--critical); font-weight: 600; }
+  .ev-unpaused { color: var(--good); font-weight: 600; }
+  .muted { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡 Aegis <span>Spend Firewall</span></h1>
+  <div class="sub">built on Arc Network · testnet</div>
+  <div class="badge" id="proc-badges">…</div>
+</header>
+
+<div class="tiles">
+  <div class="tile">
+    <div class="label">DEVRE KESİCİ (CIRCUIT BREAKER)</div>
+    <div class="status-line" id="breaker">…</div>
+    <div class="hint" id="breaker-hint"></div>
+  </div>
+  <div class="tile">
+    <div class="label">KASA BAKİYESİ</div>
+    <div class="value" id="balance">…</div>
+    <div class="hint"><a id="vault-link" target="_blank" rel="noopener">explorer'da aç ↗</a></div>
+  </div>
+  <div class="tile">
+    <div class="label">İŞLEM-BAŞI LİMİT</div>
+    <div class="value" id="maxPerTx">…</div>
+    <div class="hint">zincir üstünde, aşılamaz</div>
+  </div>
+  <div class="tile">
+    <div class="label">GÜNLÜK LİMİT (KAYAN 24S)</div>
+    <div class="value" id="daily">…</div>
+    <div class="meter"><div id="daily-bar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="buttons">
+  <button id="btn-brain">🧠 Risk beynini başlat</button>
+  <button id="btn-agent">🤖 Normal ajan</button>
+  <button id="btn-rogue">🔴 RED TEAM: ajanı çıldırt</button>
+  <button id="btn-stop">⏹ Ajanı durdur</button>
+  <button id="btn-unpause">🟢 Kasayı geri aç (owner)</button>
+</div>
+
+<div class="cols">
+  <div class="panel">
+    <h2>Canlı olay akışı (zincirden)</h2>
+    <table id="events"><tbody></tbody></table>
+    <div class="muted" id="no-events">Henüz olay yok — ajanı başlat.</div>
+  </div>
+  <div class="panel">
+    <h2>Ajan &amp; risk beyni logları</h2>
+    <div class="log" id="logs"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (v) => v.toFixed(2) + " USDC";
+const post = (path) => fetch(path, { method: "POST" });
+
+$("btn-brain").onclick = () => post("/api/brain/start");
+$("btn-agent").onclick = () => post("/api/agent/normal");
+$("btn-rogue").onclick = () => post("/api/agent/rogue");
+$("btn-stop").onclick  = () => post("/api/agent/stop");
+$("btn-unpause").onclick = () => post("/api/unpause");
+
+async function refresh() {
+  try {
+    const s = await (await fetch("/api/state")).json();
+
+    $("breaker").innerHTML = s.paused === null ? "…" :
+      s.paused
+        ? '<span style="color:var(--critical)">⛔ DURDURULDU</span>'
+        : '<span style="color:var(--good)">✅ Aktif koruma</span>';
+    $("breaker-hint").textContent = s.paused
+      ? "Tüm harcamalar bloklu — sadece owner açabilir"
+      : "Harcamalar limitler dahilinde serbest";
+
+    $("balance").textContent = fmt(s.balance);
+    $("maxPerTx").textContent = fmt(s.maxPerTx);
+    $("daily").textContent = `${fmt(s.spent24h)} / ${fmt(s.dailyLimit)}`;
+    $("daily-bar").style.width = Math.min(100, (s.spent24h / s.dailyLimit) * 100) + "%";
+    $("vault-link").href = `https://testnet.arcscan.app/address/${s.vault}`;
+    $("proc-badges").textContent =
+      `beyin: ${s.procs.brain ? "🟢" : "⚪"} · ajan: ${s.procs.agent ? "🟢" : "⚪"}` +
+      (s.lastError ? ` · rpc: ${s.lastError}` : "");
+
+    const rows = s.events.map((e) => {
+      const t = new Date(e.time).toLocaleTimeString("tr-TR");
+      const link = `<a href="https://testnet.arcscan.app/tx/${e.tx}" target="_blank" rel="noopener">tx ↗</a>`;
+      if (e.type === "spent")
+        return `<tr><td class="muted">${t}</td><td>harcama → ${e.to.slice(0, 8)}…</td><td class="num">${e.amount.toFixed(2)} USDC</td><td>${link}</td></tr>`;
+      if (e.type === "paused")
+        return `<tr><td class="muted">${t}</td><td class="ev-paused" colspan="2">🚨 DEVRE KESİCİ ÇEKİLDİ</td><td>${link}</td></tr>`;
+      return `<tr><td class="muted">${t}</td><td class="ev-unpaused" colspan="2">🟢 Kasa yeniden açıldı</td><td>${link}</td></tr>`;
+    });
+    document.querySelector("#events tbody").innerHTML = rows.join("");
+    $("no-events").style.display = s.events.length ? "none" : "block";
+
+    $("logs").innerHTML = s.logs.slice().reverse().map((l) =>
+      `<div class="${l.source}">[${l.source === "brain" ? "🧠" : "🤖"}] ${l.line.replace(/</g, "&lt;")}</div>`
+    ).join("");
+  } catch {}
+}
+setInterval(refresh, 2500);
+refresh();
+</script>
+</body>
+</html>

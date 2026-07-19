@@ -48,7 +48,10 @@ async function main() {
       console.log(`✅ ${pretty} USDC harcandı | son 24s: ${(Number(spent) / 1e6).toFixed(2)} USDC | ${tx.hash}`);
     } catch (err) {
       const reason = err.shortMessage || err.message;
-      console.log(`⛔ ${pretty} USDC BLOKLANDI → ${reason.slice(0, 120)}`);
+      // Gerçek firewall bloğu (revert) ile geçici RPC hatasını ayır
+      if (err.code === "CALL_EXCEPTION" || reason.includes("revert"))
+        console.log(`⛔ ${pretty} USDC BLOKLANDI → ${reason.slice(0, 120)}`);
+      else console.log(`(rpc hatası, tekrar denenecek: ${reason.slice(0, 80)})`);
       if (await vault.paused()) {
         console.log("🚨 Kasa acil durdurmada (circuit-breaker açık). Ajan duruyor.");
         break;

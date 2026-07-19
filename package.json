@@ -10,7 +10,8 @@
     "pause": "node vault.js pause",
     "agent": "node agent.js",
     "rogue": "node agent.js --rogue",
-    "brain": "node riskbrain.js"
+    "brain": "node riskbrain.js",
+    "dashboard": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
   "description": "Arc Testnet uzerinde 1 USDC gonderen basit script",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "ethers": "^6.17.0"
+    "ethers": "^6.17.0",
+    "express": "^5.2.1"
   }
 }
