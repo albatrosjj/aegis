@@ -78,6 +78,14 @@ Arc = Circle'ın stablecoin-native L1 zinciri. USDC gas token'ı, sub-second kes
 - Birim testler 8/8 ✅. Canlı: 1 USDC `spend` geçti; 6 USDC `ExceedsPerTxLimit` ile revert etti ✅.
 - Ayrıntılı anlatım: `docs/FAZ2-SPENDVAULT.md`.
 
+**Faz 3 — TAMAM ✅ (19 Temmuz): Ajan + risk beyni canlıda kanıtlandı.**
+- Ayrı ajan cüzdanı: `0x5BeAE5cc14d9b1612F3c89c58248Ece9A28E30A6` (`setAgent` yapıldı, 2 USDC gas fonu).
+- `agent.js`: kasadan tekrarlı ödemeler; `--rogue` bayrağı ajanı çıldırtır.
+- `riskbrain.js`: Spent olaylarını izler; hız + sıçrama skorlar; skor ≥ 100 → `pause()`.
+- **Canlı senaryo:** normal harcamalar (skor 0) → rogue 4.22 USDC (ortalamanın 27.8 katı, skor 120) → beyin breaker'ı çekti (tx `0xa0c25f93...ef04d8f`) → sonraki harcama `VaultPaused` revert → owner `unpause` etti.
+- Arc dersi: agent/riskbrain'de `pollingInterval: 8000` + hata yakalama, yoksa RPC "request limit reached" scriptleri düşürüyor.
+- Ayrıntı: `docs/FAZ3-RISK-BEYNI.md`.
+
 **Mevcut yapı:**
 - `send.js`, `package.json`, `.env` (GİZLİ), `.gitignore` — Faz 1.
 - `contracts/` — Foundry projesi: `src/SpendVault.sol`, `test/SpendVault.t.sol`.
@@ -101,13 +109,10 @@ Kod için geçerli değil; sadece deck, video, sosyal medya, UI metni gibi dış
 ### Faz 1 — USDC gönderici ✅ TAMAM
 ### Faz 2 — Policy Vault kontratı ✅ TAMAM (bkz. §4)
 
-### Faz 3 — Risk beyni + ajan ← SIRADAKİ
-- Ayrı bir ajan cüzdanı oluştur, `setAgent` ile kasaya tanıt.
-- Node ile basit bir AI ajanı: bir görev yapar ve kasadan harcar (nanopayments / tekrarlı küçük ödemeler).
-- Zincir dışı risk beyni: harcama akışını izler, anomali skorlar (ani sıçrama, hız), gerekince kasanın `pause()`'unu çağırır (agent anahtarı da pause çekebilir; unpause sadece owner).
-- (Nice-to-have) Doğal dilde politika: "günde max $50, sadece şu 3 adres" → on-chain config'e çevir.
+### Faz 3 — Risk beyni + ajan ✅ TAMAM (bkz. §4)
+- (Nice-to-have, açık) Doğal dilde politika: "günde max $50, sadece şu 3 adres" → on-chain config'e çevir.
 
-### Faz 4 — Demo dashboard + cila
+### Faz 4 — Demo dashboard + cila ← SIRADAKİ
 - Canlı dashboard: gerçek zamanlı harcama akışı, limitler, breaker durumu.
 - **"Red team" düğmesi:** ajanı çıldırt → firewall canlı bloklasın (demo'nun can alıcı anı).
 - (Stretch) Hassas tutarlar için opt-in privacy.
