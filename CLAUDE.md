@@ -92,6 +92,10 @@ Arc = Circle'ın stablecoin-native L1 zinciri. USDC gas token'ı, sub-second kes
 - Uçtan uca doğrulandı. Ayrıntı: `docs/FAZ4-DASHBOARD.md`.
 - Kalan (stretch): opt-in privacy, doğal dilde politika.
 
+**Faz 5 — BAŞLADI (19 Temmuz): teslim materyalleri.**
+- İngilizce jüri-README ✅, `.env.example` ✅, video senaryosu + 8 slaytlık deck içeriği ✅ (`docs/FAZ5-VIDEO-VE-DECK.md`).
+- Kalan: video kaydı (kullanıcı), deck'in görsel üretimi, hackathon paneline teslim.
+
 **Mevcut yapı:**
 - `send.js`, `package.json`, `.env` (GİZLİ), `.gitignore` — Faz 1.
 - `contracts/` — Foundry projesi: `src/SpendVault.sol`, `test/SpendVault.t.sol`.
