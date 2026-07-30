@@ -89,7 +89,7 @@ function startProc(name, args) {
       .forEach((l) => log(name, l));
   child.stdout.on("data", onData);
   child.stderr.on("data", onData);
-  child.on("exit", () => { state.procs[name] = null; log(name, "(süreç sonlandı)"); });
+  child.on("exit", () => { state.procs[name] = null; log(name, "(process exited)"); });
 }
 
 const app = express();
@@ -117,7 +117,7 @@ app.post("/api/unpause", async (req, res) => {
       maxPriorityFeePerGas: ethers.parseUnits("20", "gwei"),
     });
     await tx.wait();
-    log("brain", `🟢 Owner kasayı yeniden açtı: ${tx.hash}`);
+    log("brain", `🟢 Owner reopened the vault: ${tx.hash}`);
     res.json({ ok: true, tx: tx.hash });
   } catch (err) {
     res.status(500).json({ error: (err.shortMessage || err.message).slice(0, 120) });

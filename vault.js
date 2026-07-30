@@ -36,22 +36,22 @@ async function main() {
       vault.paused(), vault.maxPerTx(), vault.dailyLimit(),
       vault.spentLast24h(), vault.agent(), usdc.balanceOf(process.env.VAULT_ADDRESS),
     ]);
-    console.log(`🏦 Kasa: ${process.env.VAULT_ADDRESS}`);
-    console.log(`   Durum:        ${paused ? "🔴 DURDURULMUŞ (paused)" : "🟢 açık"}`);
-    console.log(`   Bakiye:       ${usdcFmt(balance)}`);
-    console.log(`   İşlem limiti: ${usdcFmt(maxPerTx)}`);
-    console.log(`   Günlük limit: ${usdcFmt(spent)} / ${usdcFmt(dailyLimit)} (kayan 24s)`);
-    console.log(`   Ajan:         ${agent}`);
+    console.log(`🏦 Vault: ${process.env.VAULT_ADDRESS}`);
+    console.log(`   Status:       ${paused ? "🔴 PAUSED" : "🟢 open"}`);
+    console.log(`   Balance:      ${usdcFmt(balance)}`);
+    console.log(`   Per-tx limit: ${usdcFmt(maxPerTx)}`);
+    console.log(`   Daily limit:  ${usdcFmt(spent)} / ${usdcFmt(dailyLimit)} (rolling 24h)`);
+    console.log(`   Agent:        ${agent}`);
   } else if (cmd === "unpause") {
     const tx = await vault.unpause(gas);
     await tx.wait();
-    console.log(`🟢 Kasa yeniden açıldı. tx: ${tx.hash}`);
+    console.log(`🟢 Vault reopened. tx: ${tx.hash}`);
   } else if (cmd === "pause") {
     const tx = await vault.pause(gas);
     await tx.wait();
-    console.log(`🔴 Kasa durduruldu. tx: ${tx.hash}`);
+    console.log(`🔴 Vault paused. tx: ${tx.hash}`);
   } else {
-    console.log("Kullanım: node vault.js status | pause | unpause");
+    console.log("Usage: node vault.js status | pause | unpause");
   }
 }
 

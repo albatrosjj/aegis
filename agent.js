@@ -47,9 +47,9 @@ async function main() {
   const vault = new ethers.Contract(process.env.VAULT_ADDRESS, VAULT_ABI, wallet);
   const to = process.env.RECIPIENT_ADDRESS;
 
-  console.log(`🤖 Ajan: ${wallet.address}`);
-  console.log(`   Kasa: ${process.env.VAULT_ADDRESS}`);
-  console.log(`   Mod: ${ROGUE ? "🔴 ROGUE (çıldırmış)" : "🟢 normal"}`);
+  console.log(`🤖 Agent: ${wallet.address}`);
+  console.log(`   Vault: ${process.env.VAULT_ADDRESS}`);
+  console.log(`   Mode: ${ROGUE ? "🔴 ROGUE (gone rogue)" : "🟢 normal"}`);
 
   // normal mod: 0.1–0.3 USDC / ~8sn
   // rogue mod: önce 4-5 küçük (0.2-0.4 USDC) harcama yapıp bir "ortalama" oluşturur,
@@ -78,15 +78,15 @@ async function main() {
       });
       await tx.wait();
       const spent = await vault.spentLast24h();
-      console.log(`✅ ${pretty} USDC harcandı | son 24s: ${(Number(spent) / 1e6).toFixed(2)} USDC | ${tx.hash}`);
+      console.log(`✅ ${pretty} USDC spent | last 24h: ${(Number(spent) / 1e6).toFixed(2)} USDC | ${tx.hash}`);
     } catch (err) {
       const reason = err.shortMessage || err.message;
       // Gerçek firewall bloğu (revert) ile geçici RPC hatasını ayır
       if (err.code === "CALL_EXCEPTION" || reason.includes("revert"))
-        console.log(`⛔ ${pretty} USDC BLOKLANDI → ${decodeRevert(err, vault.interface)}`);
-      else console.log(`(rpc hatası, tekrar denenecek: ${reason.slice(0, 80)})`);
+        console.log(`⛔ ${pretty} USDC BLOCKED → ${decodeRevert(err, vault.interface)}`);
+      else console.log(`(rpc error, will retry: ${reason.slice(0, 80)})`);
       if (await vault.paused()) {
-        console.log("🚨 Kasa acil durdurmada (circuit-breaker açık). Ajan duruyor.");
+        console.log("🚨 Vault in circuit-breaker (paused). Agent stopping.");
         break;
       }
     }
@@ -95,6 +95,6 @@ async function main() {
 }
 
 // RPC hıçkırıkları (rate limit vb.) ajanı düşürmesin
-process.on("unhandledRejection", (e) => console.log(`(rpc hatası, devam: ${(e.shortMessage || e.message || e).toString().slice(0, 80)})`));
+process.on("unhandledRejection", (e) => console.log(`(rpc error, continuing: ${(e.shortMessage || e.message || e).toString().slice(0, 80)})`));
 
 main().catch(console.error);

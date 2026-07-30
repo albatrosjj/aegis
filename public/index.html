@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -72,43 +72,43 @@
 
 <div class="tiles">
   <div class="tile">
-    <div class="label">DEVRE KESİCİ (CIRCUIT BREAKER)</div>
+    <div class="label">CIRCUIT BREAKER</div>
     <div class="status-line" id="breaker">…</div>
     <div class="hint" id="breaker-hint"></div>
   </div>
   <div class="tile">
-    <div class="label">KASA BAKİYESİ</div>
+    <div class="label">VAULT BALANCE</div>
     <div class="value" id="balance">…</div>
-    <div class="hint"><a id="vault-link" target="_blank" rel="noopener">explorer'da aç ↗</a></div>
+    <div class="hint"><a id="vault-link" target="_blank" rel="noopener">open in explorer ↗</a></div>
   </div>
   <div class="tile">
-    <div class="label">İŞLEM-BAŞI LİMİT</div>
+    <div class="label">PER-TX LIMIT</div>
     <div class="value" id="maxPerTx">…</div>
-    <div class="hint">zincir üstünde, aşılamaz</div>
+    <div class="hint">on-chain, unbypassable</div>
   </div>
   <div class="tile">
-    <div class="label">GÜNLÜK LİMİT (KAYAN 24S)</div>
+    <div class="label">DAILY LIMIT (ROLLING 24H)</div>
     <div class="value" id="daily">…</div>
     <div class="meter"><div id="daily-bar" style="width:0%"></div></div>
   </div>
 </div>
 
 <div class="buttons">
-  <button id="btn-brain">🧠 Risk beynini başlat</button>
-  <button id="btn-agent">🤖 Normal ajan</button>
-  <button id="btn-rogue">🔴 RED TEAM: ajanı çıldırt</button>
-  <button id="btn-stop">⏹ Ajanı durdur</button>
-  <button id="btn-unpause">🟢 Kasayı geri aç (owner)</button>
+  <button id="btn-brain">🧠 Start risk brain</button>
+  <button id="btn-agent">🤖 Normal agent</button>
+  <button id="btn-rogue">🔴 RED TEAM: send agent rogue</button>
+  <button id="btn-stop">⏹ Stop agent</button>
+  <button id="btn-unpause">🟢 Reopen vault (owner)</button>
 </div>
 
 <div class="cols">
   <div class="panel">
-    <h2>Canlı olay akışı (zincirden)</h2>
+    <h2>Live event stream (on-chain)</h2>
     <table id="events"><tbody></tbody></table>
-    <div class="muted" id="no-events">Henüz olay yok — ajanı başlat.</div>
+    <div class="muted" id="no-events">No events yet — start the agent.</div>
   </div>
   <div class="panel">
-    <h2>Ajan &amp; risk beyni logları</h2>
+    <h2>Agent &amp; risk brain logs</h2>
     <div class="log" id="logs"></div>
   </div>
 </div>
@@ -130,11 +130,11 @@ async function refresh() {
 
     $("breaker").innerHTML = s.paused === null ? "…" :
       s.paused
-        ? '<span style="color:var(--critical)">⛔ DURDURULDU</span>'
-        : '<span style="color:var(--good)">✅ Aktif koruma</span>';
+        ? '<span style="color:var(--critical)">⛔ BLOCKED</span>'
+        : '<span style="color:var(--good)">✅ Protection active</span>';
     $("breaker-hint").textContent = s.paused
-      ? "Tüm harcamalar bloklu — sadece owner açabilir"
-      : "Harcamalar limitler dahilinde serbest";
+      ? "All spending blocked — only the owner can reopen"
+      : "Spending allowed within limits";
 
     $("balance").textContent = fmt(s.balance);
     $("maxPerTx").textContent = fmt(s.maxPerTx);
@@ -142,17 +142,17 @@ async function refresh() {
     $("daily-bar").style.width = Math.min(100, (s.spent24h / s.dailyLimit) * 100) + "%";
     $("vault-link").href = `https://testnet.arcscan.app/address/${s.vault}`;
     $("proc-badges").textContent =
-      `beyin: ${s.procs.brain ? "🟢" : "⚪"} · ajan: ${s.procs.agent ? "🟢" : "⚪"}` +
+      `brain: ${s.procs.brain ? "🟢" : "⚪"} · agent: ${s.procs.agent ? "🟢" : "⚪"}` +
       (s.lastError ? ` · rpc: ${s.lastError}` : "");
 
     const rows = s.events.map((e) => {
-      const t = new Date(e.time).toLocaleTimeString("tr-TR");
+      const t = new Date(e.time).toLocaleTimeString("en-US");
       const link = `<a href="https://testnet.arcscan.app/tx/${e.tx}" target="_blank" rel="noopener">tx ↗</a>`;
       if (e.type === "spent")
-        return `<tr><td class="muted">${t}</td><td>harcama → ${e.to.slice(0, 8)}…</td><td class="num">${e.amount.toFixed(2)} USDC</td><td>${link}</td></tr>`;
+        return `<tr><td class="muted">${t}</td><td>spend → ${e.to.slice(0, 8)}…</td><td class="num">${e.amount.toFixed(2)} USDC</td><td>${link}</td></tr>`;
       if (e.type === "paused")
-        return `<tr><td class="muted">${t}</td><td class="ev-paused" colspan="2">🚨 DEVRE KESİCİ ÇEKİLDİ</td><td>${link}</td></tr>`;
-      return `<tr><td class="muted">${t}</td><td class="ev-unpaused" colspan="2">🟢 Kasa yeniden açıldı</td><td>${link}</td></tr>`;
+        return `<tr><td class="muted">${t}</td><td class="ev-paused" colspan="2">🚨 CIRCUIT BREAKER TRIPPED</td><td>${link}</td></tr>`;
+      return `<tr><td class="muted">${t}</td><td class="ev-unpaused" colspan="2">🟢 Vault reopened</td><td>${link}</td></tr>`;
     });
     document.querySelector("#events tbody").innerHTML = rows.join("");
     $("no-events").style.display = s.events.length ? "none" : "block";

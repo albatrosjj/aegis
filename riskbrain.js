@@ -27,7 +27,7 @@ async function main() {
   const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
   const vault = new ethers.Contract(process.env.VAULT_ADDRESS, VAULT_ABI, wallet);
 
-  console.log(`🧠 Risk beyni izlemede — kasa: ${process.env.VAULT_ADDRESS}`);
+  console.log(`🧠 Risk brain watching — vault: ${process.env.VAULT_ADDRESS}`);
 
   const history = []; // { time, amount(USDC float) }
   let tripped = false;
@@ -35,14 +35,36 @@ async function main() {
   async function tripBreaker(reason) {
     if (tripped) return;
     tripped = true;
-    console.log(`\n🚨🚨 ANOMALİ: ${reason}`);
-    console.log("🔌 Acil durdurma çekiliyor (pause)...");
-    const tx = await vault.pause({
-      maxFeePerGas: ethers.parseUnits("20", "gwei"),
-      maxPriorityFeePerGas: ethers.parseUnits("20", "gwei"),
-    });
-    await tx.wait();
-    console.log(`✅ Kasa durduruldu. tx: ${tx.hash}`);
+    console.log(`\n🚨🚨 ANOMALY: ${reason}`);
+    console.log("🔌 Pulling the circuit-breaker (pause)...");
+
+    let tx;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        tx = await vault.pause({
+          maxFeePerGas: ethers.parseUnits("20", "gwei"),
+          maxPriorityFeePerGas: ethers.parseUnits("20", "gwei"),
+        });
+        break;
+      } catch (err) {
+        const reason = err.shortMessage || err.message || "";
+        if (attempt < 3 && reason.includes("could not coalesce")) {
+          console.log(`(rpc error sending pause, retrying ${attempt}/3: ${reason.slice(0, 80)})`);
+          await new Promise((r) => setTimeout(r, 2000));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    try {
+      await tx.wait();
+      console.log(`✅ Vault paused. tx: ${tx.hash}`);
+    } catch (err) {
+      const reason = err.shortMessage || err.message || "";
+      console.log(`(rpc error waiting for pause confirmation: ${reason.slice(0, 80)})`);
+      if (await vault.paused()) console.log(`✅ Vault paused (confirmed on-chain). tx: ${tx.hash}`);
+    }
     process.exit(0);
   }
 
@@ -68,19 +90,19 @@ async function main() {
         const reasons = [];
         if (recent.length + 1 > MAX_TX_PER_MIN) {
           score += 60;
-          reasons.push(`hız: ${recent.length + 1} işlem/dk`);
+          reasons.push(`velocity: ${recent.length + 1} tx/min`);
         }
         if (history.length >= 2 && amount > avg * SPIKE_FACTOR) {
           score += 120; // tek başına breaker'ı tetikler — büyük sıçrama en net tehlike işareti
-          reasons.push(`sıçrama: ${amount.toFixed(2)} USDC (ortalama ${avg.toFixed(2)}'nin ${(amount / avg).toFixed(1)} katı)`);
+          reasons.push(`spike: ${amount.toFixed(2)} USDC (${(amount / avg).toFixed(1)}x the ${avg.toFixed(2)} average)`);
         }
 
         history.push({ time: t, amount });
-        console.log(`👁  ${amount.toFixed(2)} USDC → ${ev.args.to.slice(0, 10)}… | risk skoru: ${score}`);
+        console.log(`👁  ${amount.toFixed(2)} USDC → ${ev.args.to.slice(0, 10)}… | risk score: ${score}`);
         if (score >= SCORE_LIMIT) await tripBreaker(reasons.join(" + "));
       }
     } catch (err) {
-      console.log(`(izleme hatası, devam: ${(err.shortMessage || err.message).slice(0, 80)})`);
+      console.log(`(monitoring error, continuing: ${(err.shortMessage || err.message).slice(0, 80)})`);
     }
   }, 10000); // 10 sn'de bir yokla — RPC rate limitine takılma
 }
