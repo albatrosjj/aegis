@@ -13,9 +13,32 @@ const VAULT_ABI = [
   "function spend(address to, uint256 amount)",
   "function spentLast24h() view returns (uint256)",
   "function paused() view returns (bool)",
+  "error NotOwner()",
+  "error NotAgent()",
+  "error VaultPaused()",
+  "error NotAllowlisted(address to)",
+  "error ExceedsPerTxLimit(uint256 amount, uint256 maxPerTx)",
+  "error ExceedsDailyLimit(uint256 attempted, uint256 dailyLimit)",
 ];
 
 const ROGUE = process.argv.includes("--rogue");
+
+// Custom error selector'ını okunur mesaja çevirir; çözemezse ham veriyi döner.
+function decodeRevert(err, iface) {
+  const data = err.data ?? err.info?.error?.data ?? err.error?.data;
+  if (!data) return err.shortMessage || err.message;
+  try {
+    const parsed = iface.parseError(data);
+    if (!parsed) return err.shortMessage || err.message;
+    const args = parsed.args
+      .filter((_, i) => Number.isNaN(Number(i)) === false && i < parsed.fragment.inputs.length)
+      .map((a) => (typeof a === "bigint" ? (Number(a) / 1e6).toFixed(2) + " USDC" : a))
+      .join(", ");
+    return args ? `${parsed.name}(${args})` : `${parsed.name}()`;
+  } catch {
+    return err.shortMessage || err.message;
+  }
+}
 
 async function main() {
   // pollingInterval yüksek: Arc RPC "request limit reached" vermesin
@@ -28,12 +51,22 @@ async function main() {
   console.log(`   Kasa: ${process.env.VAULT_ADDRESS}`);
   console.log(`   Mod: ${ROGUE ? "🔴 ROGUE (çıldırmış)" : "🟢 normal"}`);
 
-  // normal: 0.1–0.3 USDC / ~8sn — rogue: 3–5 USDC / ~2sn
+  // normal mod: 0.1–0.3 USDC / ~8sn
+  // rogue mod: önce 4-5 küçük (0.2-0.4 USDC) harcama yapıp bir "ortalama" oluşturur,
+  // sonra TEK bir sıçrama harcaması dener — ortalamanın 5 katından fazla ama
+  // maxPerTx (5 USDC) altında (~3-4 USDC) — böylece işlem GEÇER, Spent yayınlanır
+  // ve risk beyni sıçramayı görüp breaker'ı çeker. Sonrasında ajan eski davranışına
+  // (büyük/hızlı harcama denemeleri) döner; bunlar artık VaultPaused ile revert eder.
   const intervalMs = ROGUE ? 2000 : 8000;
-  const randAmount = () =>
-    ROGUE
-      ? BigInt(3_000_000 + Math.floor(Math.random() * 2_000_000))
-      : BigInt(100_000 + Math.floor(Math.random() * 200_000));
+  const ROGUE_WARMUP_TX = 5;
+  let rogueStep = 0;
+  const randAmount = () => {
+    if (!ROGUE) return BigInt(100_000 + Math.floor(Math.random() * 200_000));
+    rogueStep++;
+    if (rogueStep <= ROGUE_WARMUP_TX) return BigInt(200_000 + Math.floor(Math.random() * 200_000)); // 0.2-0.4 USDC
+    if (rogueStep === ROGUE_WARMUP_TX + 1) return BigInt(3_000_000 + Math.floor(Math.random() * 1_000_000)); // spike: 3-4 USDC
+    return BigInt(3_000_000 + Math.floor(Math.random() * 2_000_000)); // breaker sonrası: eski rogue davranışı (bloklanmalı)
+  };
 
   while (true) {
     const amount = randAmount();
@@ -50,7 +83,7 @@ async function main() {
       const reason = err.shortMessage || err.message;
       // Gerçek firewall bloğu (revert) ile geçici RPC hatasını ayır
       if (err.code === "CALL_EXCEPTION" || reason.includes("revert"))
-        console.log(`⛔ ${pretty} USDC BLOKLANDI → ${reason.slice(0, 120)}`);
+        console.log(`⛔ ${pretty} USDC BLOKLANDI → ${decodeRevert(err, vault.interface)}`);
       else console.log(`(rpc hatası, tekrar denenecek: ${reason.slice(0, 80)})`);
       if (await vault.paused()) {
         console.log("🚨 Kasa acil durdurmada (circuit-breaker açık). Ajan duruyor.");
