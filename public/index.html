@@ -116,7 +116,18 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const fmt = (v) => v.toFixed(2) + " USDC";
-const post = (path) => fetch(path, { method: "POST" });
+let ACTION_KEY = null;
+const post = (path) => {
+  if (!ACTION_KEY) ACTION_KEY = prompt("Enter demo password to run this action:") || "";
+  return fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: ACTION_KEY })
+  }).then(async (r) => {
+    if (r.status === 401) { ACTION_KEY = null; alert("Wrong password, try again."); }
+    return r;
+  });
+};
 
 $("btn-brain").onclick = () => post("/api/brain/start");
 $("btn-agent").onclick = () => post("/api/agent/normal");
@@ -167,3 +178,48 @@ refresh();
 </script>
 </body>
 </html>
+<style id="aegis-fx">
+@keyframes aegisGood { from{background:rgba(12,163,12,.38)} to{background:transparent} }
+@keyframes aegisBad  { from{background:rgba(208,59,59,.45)} to{background:transparent} }
+@keyframes aegisPulse{ 0%,100%{opacity:1} 50%{opacity:.5} }
+.aegis-good td{ animation:aegisGood 1.3s ease-out; }
+.aegis-bad  td{ animation:aegisBad 1.5s ease-out; }
+#aegis-banner{
+  position:fixed; top:0; left:0; right:0; z-index:9999; display:none;
+  background:#d03b3b; color:#fff; text-align:center;
+  font:700 20px/1.3 system-ui,sans-serif; letter-spacing:.04em;
+  padding:14px; box-shadow:0 4px 24px rgba(0,0,0,.45);
+  animation:aegisPulse 1.1s ease-in-out 3;
+}
+body.aegis-paused{ box-shadow: inset 0 0 0 4px rgba(208,59,59,.6); }
+</style>
+<div id="aegis-banner">⛔ VAULT PAUSED — circuit-breaker tripped · all spending frozen</div>
+<script>
+(function(){
+  var banner=document.getElementById('aegis-banner');
+  var seen=new Set(); var start=Date.now();
+  function checkBreaker(){
+    var b=document.getElementById('breaker'); if(!b) return;
+    var blocked=/BLOCKED/i.test(b.textContent||'');
+    if(banner) banner.style.display=blocked?'block':'none';
+    document.body.classList.toggle('aegis-paused',blocked);
+  }
+  setInterval(checkBreaker,700);
+  function keyOf(tr){ var a=tr.querySelector('a[href*="/tx/"]'); return a?a.getAttribute('href'):tr.textContent.trim(); }
+  var tbody=document.querySelector('#events tbody');
+  if(tbody){
+    var flash=function(){
+      tbody.querySelectorAll('tr').forEach(function(tr){
+        var k=keyOf(tr); if(seen.has(k)) return; seen.add(k);
+        if(Date.now()-start<2500) return;
+        var txt=tr.textContent||''; var n=tr.querySelector('.num'); var amt=0;
+        if(n){ var m=n.textContent.match(/([\d.]+)/); if(m) amt=parseFloat(m[1]); }
+        if(/CIRCUIT BREAKER/i.test(txt)||amt>=1.5) tr.classList.add('aegis-bad');
+        else tr.classList.add('aegis-good');
+      });
+    };
+    new MutationObserver(flash).observe(tbody,{childList:true});
+    flash();
+  }
+})();
+</script>

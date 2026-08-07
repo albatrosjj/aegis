@@ -1,94 +1,56 @@
-# 🛡 Aegis — Spend-Control Firewall for AI Agents
+# Aegis
 
-**Built on Arc Network** · USDC-native · [Live vault on Arc Testnet](https://testnet.arcscan.app/address/0x5FB636AbB12A0E2d8F3ec5251dfaEbD4Faa87BfF)
+A spend-control firewall for AI agents. Built on Arc for the Build on Arc hackathon, Agentic Economy track.
 
-AI agents are starting to hold wallets and pay autonomously. The hard problem
-isn't spending — it's **trusting an agent with real money**. Nobody wants to
-hand an AI a raw private key.
+AI agents are starting to hold wallets and pay on their own. The hard part isn't spending, it's trusting an agent with real money. Hand an AI a raw private key and one bad decision can drain the whole treasury, with no way to reverse it. Aegis closes that gap.
 
-Aegis is what Ramp/Brex corporate cards + fraud controls are for employees,
-**for the agent economy**: programmable budgets, hard on-chain limits, an
-allowlist, and a circuit breaker that trips the moment behavior turns anomalous.
+The agent never holds the keys. Its funds sit in a policy vault that enforces spending rules onchain, and an offchain risk process watches every spend and freezes the vault the moment something looks abnormal.
 
-```
-AI agent → spend() → Policy Vault (Arc, USDC + hard limits) → service / other agent
-                          ↑
-              Risk brain (off-chain, scores behavior → trips the breaker)
-```
+## Live demo
 
-## How it works — two layers of defense
+Dashboard: https://missed-translator-larry-resorts.trycloudflare.com
+Demo video: https://www.youtube.com/watch?v=BOU3xwBdrCw
+Vault on ArcScan: https://testnet.arcscan.app/address/0x4Ed99ba89fAd4061484bAA53093bA2782ec07664
 
-**Layer 1 — hard limits, enforced on-chain (`contracts/src/SpendVault.sol`):**
-the agent never holds funds or a treasury key. Money sits in a vault that
-reverts anything outside policy:
+The dashboard is interactive. Action buttons are password-protected so the demo stays stable. Password: aegis2026
 
-| Rule | What it enforces |
-|---|---|
-| `maxPerTx` | absolute cap per transaction |
-| `dailyLimit` | sliding 24-hour window cap |
-| `allowlist` | funds can only ever flow to approved addresses |
-| `paused` | circuit breaker — blocks everything until a human reopens |
+To run the red-team demo: click "Start risk brain", then "RED TEAM: send agent rogue". The agent makes normal spends, then spikes. The risk process catches it and trips the circuit-breaker onchain. Every spend after that is blocked.
 
-Two roles: the **owner** (human) sets policy, withdraws, and is the only one
-who can unpause. The **agent** can only call `spend()` — and `pause()`, because
-raising the alarm should be cheap; silencing it should require a human.
+## How it works
 
-**Layer 2 — the risk brain (`riskbrain.js`):** watches `Spent` events in real
-time and scores behavior (velocity, amount spikes vs. the agent's own moving
-average). Anomaly → it trips the on-chain breaker. Even if the brain dies,
-Layer 1 stands: worst-case loss is mathematically bounded by the limits.
+The agent cannot sign transfers directly. It requests a spend, and the vault decides.
 
-**Proven live on Arc Testnet:** a rogue agent's 4.22 USDC spend (27.8× its
-average) was detected and the breaker tripped within seconds —
-[breaker tx](https://testnet.arcscan.app/tx/0xa0c25f9342bb8ec4f10e1d84a611ce556b248c96c25a9c7a8fb66c1d7ef04d8f).
-Every subsequent spend reverted with `VaultPaused`.
+Layer 1, onchain policy vault. Enforces four rules that cannot be bypassed: a per-transaction cap, a rolling 24-hour daily limit, an allowlist of approved recipients, and a circuit-breaker that freezes all spending. The owner sets policy and is the only address that can reopen a paused vault. The agent can request a spend and can trigger the pause, but only a human can lift it.
 
-## Quick start
+Layer 2, offchain risk process. Reads every spend event, learns the agent's normal pattern, and trips the onchain circuit-breaker when a payment is many times larger than the recent average, or when velocity spikes.
 
-```bash
+The two layers cover each other. The onchain limits set a hard ceiling. The risk process catches abnormal behavior under those limits.
+
+## Proof it works
+
+A rogue agent, caught live on Arc testnet: it starts with small spends (average near 0.28 USDC), then tries to spend 3.41 USDC, roughly ten times its average. The risk process catches it and pulls the circuit-breaker onchain in seconds. Every spend after that reverts with VaultPaused, and the agent stops.
+
+Real pause transaction: https://testnet.arcscan.app/tx/0x6fbc0e537f470836f6c64e74330189a00435bb0cacf56422936ddd4afca6b1cd
+
+Contract tests pass 8/8.
+
+## Run it locally
+
+Requires Node.js 20+.
+
+git clone https://github.com/albatrosjj/aegis.git
+cd aegis
 npm install
-cp .env.example .env   # fill in keys (testnet only!)
 
-npm run dashboard      # live dashboard at http://localhost:3000
-```
+Create a .env file with PRIVATE_KEY, AGENT_PRIVATE_KEY, AGENT_ADDRESS, RECIPIENT_ADDRESS, and VAULT_ADDRESS. Then run: npm run status, npm run brain, npm run rogue, npm run dashboard.
 
-From the dashboard: start the risk brain → start the normal agent → hit
-**RED TEAM** to send the agent rogue → watch the breaker trip on-chain.
+## Built on Arc
 
-CLI equivalents: `npm run brain` / `agent` / `rogue` / `status` / `pause` / `unpause`.
+USDC is the native gas token, so spend and fees are dollar-denominated and predictable, which matters when the payer is a machine. Sub-second finality lets a spend be checked and settled fast enough for the breaker to matter.
 
-Contract tests (8/8 passing, incl. the sliding-window edge case):
+Network: Arc Testnet, Chain ID 5042002, explorer https://testnet.arcscan.app
+Deployed vault: 0x4Ed99ba89fAd4061484bAA53093bA2782ec07664
 
-```bash
-cd contracts && forge test
-```
+## Stack
 
-## Deployed (Arc Testnet, chain ID 5042002)
-
-| | |
-|---|---|
-| SpendVault | [`0x5FB636AbB12A0E2d8F3ec5251dfaEbD4Faa87BfF`](https://testnet.arcscan.app/address/0x5FB636AbB12A0E2d8F3ec5251dfaEbD4Faa87BfF) |
-| USDC (ERC-20 face, 6 decimals) | `0x3600000000000000000000000000000000000000` |
-| Agent wallet | `0x5BeAE5cc14d9b1612F3c89c58248Ece9A28E30A6` |
-
-## Repo map
-
-```
-contracts/src/SpendVault.sol   the policy vault (the heart)
-contracts/test/                Foundry tests
-agent.js                       spending agent (--rogue to go rogue)
-riskbrain.js                   anomaly scorer → trips the breaker
-server.js + public/            live demo dashboard
-docs/                          build log, phase by phase (Turkish)
-```
-
-## Why Arc Network
-
-USDC as the native gas token means the agent economy's unit of account *is*
-the settlement asset — no token juggling, sub-second finality for
-machine-speed payments, and Circle's compliance-first stack matches what
-enterprises will demand before wiring real treasuries to autonomous agents.
-
----
-
-*Built for the Build on Arc hackathon (Circle × Encode Club), Agentic Economy track. Testnet only — do not use these keys or this unaudited contract with real funds.*
+Solidity (Foundry), Node.js, ethers.js, Express, Arc testnet
