@@ -1,4 +1,4 @@
-# Aegis
+Aegis
 
 A spend-control firewall for AI agents. Built on Arc for the Build on Arc hackathon, Agentic Economy track.
 
@@ -6,17 +6,15 @@ AI agents are starting to hold wallets and pay on their own. The hard part isn't
 
 The agent never holds the keys. Its funds sit in a policy vault that enforces spending rules onchain, and an offchain risk process watches every spend and freezes the vault the moment something looks abnormal.
 
-## Live demo
+Live demo
 
-Dashboard: https://missed-translator-larry-resorts.trycloudflare.com
-Demo video: https://www.youtube.com/watch?v=BOU3xwBdrCw
-Vault on ArcScan: https://testnet.arcscan.app/address/0x4Ed99ba89fAd4061484bAA53093bA2782ec07664
+Dashboard: https://missed-translator-larry-resorts.trycloudflare.com Demo video: https://www.youtube.com/watch?v=BOU3xwBdrCw Vault on ArcScan: https://testnet.arcscan.app/address/0x4Ed99ba89fAd4061484bAA53093bA2782ec07664
 
 The dashboard is interactive. Action buttons are password-protected so the demo stays stable. Password: aegis2026
 
 To run the red-team demo: click "Start risk brain", then "RED TEAM: send agent rogue". The agent makes normal spends, then spikes. The risk process catches it and trips the circuit-breaker onchain. Every spend after that is blocked.
 
-## How it works
+How it works
 
 The agent cannot sign transfers directly. It requests a spend, and the vault decides.
 
@@ -26,7 +24,7 @@ Layer 2, offchain risk process. Reads every spend event, learns the agent's norm
 
 The two layers cover each other. The onchain limits set a hard ceiling. The risk process catches abnormal behavior under those limits.
 
-## Proof it works
+Proof it works
 
 A rogue agent, caught live on Arc testnet: it starts with small spends (average near 0.28 USDC), then tries to spend 3.41 USDC, roughly ten times its average. The risk process catches it and pulls the circuit-breaker onchain in seconds. Every spend after that reverts with VaultPaused, and the agent stops.
 
@@ -34,23 +32,37 @@ Real pause transaction: https://testnet.arcscan.app/tx/0x6fbc0e537f470836f6c64e7
 
 Contract tests pass 8/8.
 
-## Run it locally
+Run it locally
 
 Requires Node.js 20+.
 
-git clone https://github.com/albatrosjj/aegis.git
-cd aegis
-npm install
+git clone https://github.com/albatrosjj/aegis.git cd aegis npm install
 
 Create a .env file with PRIVATE_KEY, AGENT_PRIVATE_KEY, AGENT_ADDRESS, RECIPIENT_ADDRESS, and VAULT_ADDRESS. Then run: npm run status, npm run brain, npm run rogue, npm run dashboard.
 
-## Built on Arc
+Built on Arc
 
 USDC is the native gas token, so spend and fees are dollar-denominated and predictable, which matters when the payer is a machine. Sub-second finality lets a spend be checked and settled fast enough for the breaker to matter.
 
-Network: Arc Testnet, Chain ID 5042002, explorer https://testnet.arcscan.app
-Deployed vault: 0x4Ed99ba89fAd4061484bAA53093bA2782ec07664
+Deployments
 
-## Stack
+Mainnet, Chain ID 5042, explorer https://explorer.arc.io Vault: 0xafA06D7fCC34Eb203141b92631F01D41af8acb05 (source verified, exact match) Limits: 0.25 USDC per transaction, 5 USDC rolling 24h
+
+Live transactions on mainnet:
+
+Vault funded: https://explorer.arc.io/tx/0xe3f6e455709d11f57b1eea56550bb84ea37867158a3076358d0ed2ed77d93a25
+Recipient allowlisted: https://explorer.arc.io/tx/0xa8956b66dd7c2bb5d466fd00409b2b0400b979e3cead662861215f90ff864ead
+Spend within policy: https://explorer.arc.io/tx/0x7d2cd7037330dceb329e2dcf7e40d4093a7a6e9a0494475f1fb3cfb661142947
+A 2 USDC attempt against a 1 USDC cap reverted with ExceedsPerTxLimit
+
+Testnet, Chain ID 5042002, explorer https://testnet.arcscan.app Vault: 0x4Ed99ba89fAd4061484bAA53093bA2782ec07664 (source verified)
+
+Funding the vault
+
+Send USDC to the vault with an ERC-20 transfer() call on the USDC contract at 0x3600000000000000000000000000000000000000.
+
+Do not use a plain wallet send. On Arc, USDC is both the native gas asset and an ERC-20 interface over the same balance. A native send executes the recipient's code, and the vault has no receive() function, so the transfer reverts. Wallet UIs default to the native path and will show the transaction as failing.
+
+Stack
 
 Solidity (Foundry), Node.js, ethers.js, Express, Arc testnet
