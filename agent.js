@@ -5,14 +5,21 @@
 // Sert limitler zincir üstünde, risk beyni de dışarıdan izliyor.
 require("dotenv").config();
 const { ethers } = require("ethers");
+const fs = require("fs");
+const REJECT_LOG = process.env.REJECT_LOG || ".rejections.jsonl";
+function kaydetRed(amount) {
+  try { fs.appendFileSync(REJECT_LOG, JSON.stringify({ t: Date.now(), amount }) + "\n"); }
+  catch (e) {}
+}
 
-const RPC = "https://rpc.testnet.arc.network";
-const CHAIN_ID = 5042002;
+const RPC = process.env.RPC_URL || "https://rpc.testnet.arc.network";
+const CHAIN_ID = Number(process.env.CHAIN_ID || 5042002);
 
 const VAULT_ABI = [
   "function spend(address to, uint256 amount)",
   "function spentLast24h() view returns (uint256)",
   "function paused() view returns (bool)",
+  "function maxPerTx() view returns (uint256)",
   "error NotOwner()",
   "error NotAgent()",
   "error VaultPaused()",
@@ -60,12 +67,17 @@ async function main() {
   const intervalMs = ROGUE ? 2000 : 8000;
   const ROGUE_WARMUP_TX = 5;
   let rogueStep = 0;
+  // Her calistirmada temiz baslasin, eski redler yeni turu tetiklemesin.
+  try { fs.writeFileSync(REJECT_LOG, ""); } catch (e) {}
+  // Tutarlar zincirdeki maxPerTx'e gore olceklenir; limit degisince senaryo bozulmaz.
+  const cap = Number(await vault.maxPerTx());
+  const araliktaRastgele = (alt, ust) => BigInt(Math.floor(alt + Math.random() * (ust - alt)));
   const randAmount = () => {
-    if (!ROGUE) return BigInt(100_000 + Math.floor(Math.random() * 200_000));
+    if (!ROGUE) return araliktaRastgele(cap * 0.10, cap * 0.35);
     rogueStep++;
-    if (rogueStep <= ROGUE_WARMUP_TX) return BigInt(200_000 + Math.floor(Math.random() * 200_000)); // 0.2-0.4 USDC
-    if (rogueStep === ROGUE_WARMUP_TX + 1) return BigInt(3_000_000 + Math.floor(Math.random() * 1_000_000)); // spike: 3-4 USDC
-    return BigInt(3_000_000 + Math.floor(Math.random() * 2_000_000)); // breaker sonrası: eski rogue davranışı (bloklanmalı)
+    if (rogueStep <= ROGUE_WARMUP_TX) return araliktaRastgele(cap * 0.10, cap * 0.20);
+    if (rogueStep === ROGUE_WARMUP_TX + 1) return araliktaRastgele(cap * 0.80, cap * 0.95);
+    return araliktaRastgele(cap * 1.5, cap * 3.0);
   };
 
   while (true) {
@@ -83,7 +95,7 @@ async function main() {
       const reason = err.shortMessage || err.message;
       // Gerçek firewall bloğu (revert) ile geçici RPC hatasını ayır
       if (err.code === "CALL_EXCEPTION" || reason.includes("revert"))
-        console.log(`⛔ ${pretty} USDC BLOCKED → ${decodeRevert(err, vault.interface)}`);
+        { console.log(`⛔ ${pretty} USDC BLOCKED → ${decodeRevert(err, vault.interface)}`); kaydetRed(Number(amount) / 1e6); }
       else console.log(`(rpc error, will retry: ${reason.slice(0, 80)})`);
       if (await vault.paused()) {
         console.log("🚨 Vault in circuit-breaker (paused). Agent stopping.");

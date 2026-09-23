@@ -6,9 +6,26 @@
 //  - SIÇRAMA: tutar, önceki harcamaların hareketli ortalamasının kaç katı
 require("dotenv").config();
 const { ethers } = require("ethers");
+const fs = require("fs");
 
-const RPC = "https://rpc.testnet.arc.network";
-const CHAIN_ID = 5042002;
+const MAX_REJECTS_PER_MIN = 4;
+const REJECT_LOG = process.env.REJECT_LOG || ".rejections.jsonl";
+
+// Reddedilen denemeler zincire olay yazmaz (revert eden islem log birakmaz),
+// bu yuzden ajan onlari dosyaya yazar, beyin buradan okur.
+function sonDakikadakiRedler() {
+  try {
+    const t = Date.now();
+    return fs.readFileSync(REJECT_LOG, "utf8").trim().split("\n")
+      .filter(Boolean)
+      .map((satir) => { try { return JSON.parse(satir); } catch { return null; } })
+      .filter((r) => r && t - r.t < 60_000);
+  } catch { return []; }
+}
+
+
+const RPC = process.env.RPC_URL || "https://rpc.testnet.arc.network";
+const CHAIN_ID = Number(process.env.CHAIN_ID || 5042002);
 
 const VAULT_ABI = [
   "event Spent(address indexed to, uint256 amount)",
@@ -17,9 +34,9 @@ const VAULT_ABI = [
 ];
 
 // Eşikler (demo için agresif ayarlı)
-const MAX_TX_PER_MIN = 10;   // dakikada 10+ işlem → anomali
-const SPIKE_FACTOR = 5;      // ortalamanın 5 katı tutar → anomali
-const SCORE_LIMIT = 100;     // skor bunu aşınca breaker çekilir
+const MAX_TX_PER_MIN = 5;   // dakikada 10+ işlem → anomali
+const SPIKE_FACTOR = 3;      // ortalamanın 5 katı tutar → anomali
+const SCORE_LIMIT = 80;     // skor bunu aşınca breaker çekilir
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(RPC, CHAIN_ID, { staticNetwork: true, pollingInterval: 8000 });
@@ -72,6 +89,14 @@ async function main() {
   let lastBlock = await provider.getBlockNumber();
   setInterval(async () => {
     try {
+      const redler = sonDakikadakiRedler();
+      if (redler.length >= MAX_REJECTS_PER_MIN) {
+        const toplam = redler.reduce((s, r) => s + r.amount, 0).toFixed(2);
+        console.log(`👁  ${redler.length} rejected attempt(s) in the last minute (${toplam} USDC requested)`);
+        await tripBreaker(`${redler.length} rejected spend attempts in 60s, totalling ${toplam} USDC`);
+        return;
+      }
+
       const now = await provider.getBlockNumber();
       if (now <= lastBlock) return;
       const events = await vault.queryFilter(vault.filters.Spent(), lastBlock + 1, now);
@@ -104,7 +129,7 @@ async function main() {
     } catch (err) {
       console.log(`(monitoring error, continuing: ${(err.shortMessage || err.message).slice(0, 80)})`);
     }
-  }, 10000); // 10 sn'de bir yokla — RPC rate limitine takılma
+  }, 5000); // 5 sn'de bir yokla — RPC rate limitine takılma
 }
 
 main().catch(console.error);

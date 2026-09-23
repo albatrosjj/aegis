@@ -3,8 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const { spawn } = require("child_process");
 const { ethers } = require("ethers");
-const RPC = "https://rpc.testnet.arc.network";
-const CHAIN_ID = 5042002;
+const RPC = process.env.RPC_URL || "https://rpc.testnet.arc.network";
+const CHAIN_ID = Number(process.env.CHAIN_ID || 5042002);
 const USDC = "0x3600000000000000000000000000000000000000";
 const PORT = process.env.PORT || 3000;
 const ACTION_KEY = process.env.ACTION_KEY || "aegis2026";  // düğme şifresi

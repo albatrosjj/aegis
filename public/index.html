@@ -66,7 +66,7 @@
 <body>
 <header>
   <h1>🛡 Aegis <span>Spend Firewall</span></h1>
-  <div class="sub">built on Arc Network · testnet</div>
+  <div class="sub">built on Arc · mainnet</div>
   <div class="badge" id="proc-badges">…</div>
 </header>
 
@@ -151,14 +151,14 @@ async function refresh() {
     $("maxPerTx").textContent = fmt(s.maxPerTx);
     $("daily").textContent = `${fmt(s.spent24h)} / ${fmt(s.dailyLimit)}`;
     $("daily-bar").style.width = Math.min(100, (s.spent24h / s.dailyLimit) * 100) + "%";
-    $("vault-link").href = `https://testnet.arcscan.app/address/${s.vault}`;
+    $("vault-link").href = `https://explorer.arc.io/address/${s.vault}`;
     $("proc-badges").textContent =
       `brain: ${s.procs.brain ? "🟢" : "⚪"} · agent: ${s.procs.agent ? "🟢" : "⚪"}` +
       (s.lastError ? ` · rpc: ${s.lastError}` : "");
 
     const rows = s.events.map((e) => {
       const t = new Date(e.time).toLocaleTimeString("en-US");
-      const link = `<a href="https://testnet.arcscan.app/tx/${e.tx}" target="_blank" rel="noopener">tx ↗</a>`;
+      const link = `<a href="https://explorer.arc.io/tx/${e.tx}" target="_blank" rel="noopener">tx ↗</a>`;
       if (e.type === "spent")
         return `<tr><td class="muted">${t}</td><td>spend → ${e.to.slice(0, 8)}…</td><td class="num">${e.amount.toFixed(2)} USDC</td><td>${link}</td></tr>`;
       if (e.type === "paused")

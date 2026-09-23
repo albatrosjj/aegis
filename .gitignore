@@ -3,3 +3,11 @@ node_modules/
 
 contracts/cache/
 contracts/out/
+.rejections.jsonl
+*.yedek
+*.bak
+*.fix-oncesi
+*.mainnet-oncesi
+.rejections.jsonl
+dashboard.log
+aegis/

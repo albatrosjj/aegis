@@ -1,9 +1,10 @@
+require("dotenv").config();
 const { ethers } = require("ethers");
 
-const RPC = "https://rpc.testnet.arc.network";
-const CHAIN_ID = 5042002;
+const RPC = process.env.RPC_URL || "https://rpc.testnet.arc.network";
+const CHAIN_ID = Number(process.env.CHAIN_ID || 5042002);
 const USDC = "0x3600000000000000000000000000000000000000";
-const VAULT_ADDRESS = "0x5FB636AbB12A0E2d8F3ec5251dfaEbD4Faa87BfF";
+const VAULT_ADDRESS = process.env.VAULT_ADDRESS;
 
 const VAULT_ABI = [
   "function paused() view returns (bool)",

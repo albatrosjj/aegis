@@ -3,8 +3,8 @@
 require("dotenv").config();
 const { ethers } = require("ethers");
 
-const RPC = "https://rpc.testnet.arc.network";
-const CHAIN_ID = 5042002;
+const RPC = process.env.RPC_URL || "https://rpc.testnet.arc.network";
+const CHAIN_ID = Number(process.env.CHAIN_ID || 5042002);
 const USDC = "0x3600000000000000000000000000000000000000";
 
 const VAULT_ABI = [
